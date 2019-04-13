@@ -1,0 +1,28 @@
+{"data": {
+  "data_dir": "data",
+  "dataset": "all_stocks_5yr.csv"
+  },
+"preprocessing": {
+  "vars_output": ["close"],
+  "no_multisteps": 1,
+  "lag": 7,
+  "stationary": true,
+  "re-fit": false,
+  "multivariate": true,
+  "test_size": 0.1
+  },
+"arch": {
+  "neurons": 32,
+  "rnn": "LSTM",
+  "drop": 0.0,
+  "nlayers": 1,
+  "activation": "tanh",
+  "activation_r": "hard_sigmoid"
+  },
+"training": {
+  "batch": 500,
+  "epochs": 25,
+  "optimizer": "adam",
+  "lrate": 0.001
+  }
+}
