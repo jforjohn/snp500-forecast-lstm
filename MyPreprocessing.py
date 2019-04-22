@@ -1,5 +1,3 @@
-# Source for most of it: https://machinelearningmastery.com/time-series-forecasting-long-short-term-memory-network-python/
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -90,28 +88,3 @@ def scale(train, test):
     #test = test.reshape(test.shape[0], test.shape[1])
     test_scaled = scaler.transform(test)
     return scaler, train_scaled, test_scaled
-
-def invert_scale(scaler, forecast):
-    # inverse scaling for a forecasted value
-    # create array from forecast
-    forecast = forecast.reshape(1, len(forecast))
-    inverted = scaler.inverse_transform(forecast)
-    return inverted[0, :]
-
-def inverse_transform(series, forecasts, scaler, n_test):
-    # inverse data transform on forecasts
-	inverted = list()
-	for i in range(len(forecasts)):
-		# create array from forecast
-		forecast = array(forecasts[i])
-		forecast = forecast.reshape(1, len(forecast))
-		# invert scaling
-		inv_scale = scaler.inverse_transform(forecast)
-		inv_scale = inv_scale[0, :]
-		# invert differencing
-		index = len(series) - n_test + i - 1
-		last_ob = series.values[index]
-		inv_diff = inverse_difference(last_ob, inv_scale)
-		# store
-		inverted.append(inv_diff)
-	return inverted
