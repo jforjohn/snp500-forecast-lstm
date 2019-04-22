@@ -1,7 +1,8 @@
 # Source for most of it: https://machinelearningmastery.com/time-series-forecasting-long-short-term-memory-network-python/
 
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import path
 import sys
 
@@ -20,41 +21,48 @@ def dataset_filter(df, companies_file):
     freqs_index = freqs[freqs == dates_num].index
     freqs_filter = df['Name'].isin(freqs_index)
     df = df[freqs_filter].reset_index(drop=True)
+    per_company_groups = df.groupby('Name')
     df = df.drop(['date', 'Name'], axis=1)
-    return df
+    return per_company_groups, df
 
 def df_to_supervised(df, n_in=1, n_out=1, vars_output=['close'], dropnan=True):
     # convert time series into supervised learning problem
     if not vars_output:
         print('Define variables of the dataset for the output (prediction)')
         sys.exit(1)
-    n_out = len(vars_output)
     vars_output_index = []
     for var_output in vars_output:
         vars_output_index.append(
             df.columns.get_loc(var_output))
 
     n_vars = df.shape[1]
-    cols, names = list(), list()
+    agg = pd.DataFrame()
+    names = list()
+
     # input sequence (t-n, ... t-1)
-    for i in range(n_in, 0, -1):
-        cols.append(df.shift(i))
-        names += [('var%d(t-%d)' % (j+1, i)) for j in range(n_vars)]
-        
+    for i in range(n_in):
+        concat_values = df.iloc[i:-n_in-n_out+1+i,:].reset_index(drop=True)
+        agg = pd.concat([agg, concat_values], axis=1)
+        names += [('var%d(t-%d)' % (j+1, n_in-i)) for j in range(n_vars)]
+
     # forecast sequence (t, t+1, ... t+n)
-    for i in range(0, n_out):
-        cols.append(df[vars_output].shift(-i))
+    for i in range(n_out):
+        if -n_out+1+i == 0:
+            concat_values = df[vars_output].iloc[n_in+i:,:].reset_index(drop=True)
+        else:
+            concat_values = df[vars_output].iloc[n_in+i:-n_out+1+i].reset_index(drop=True)
+        agg = pd.concat([agg, concat_values], axis=1)
         if i == 0:
             names += [('var%d(t)' % (j+1)) for j in vars_output_index]
         else:
             names += [('var%d(t+%d)' % (j+1, i)) for j in vars_output_index]
     # put it all together
-    agg = pd.concat(cols, axis=1)
+    #agg = pd.concat(cols, axis=1)
     agg.columns = names
     # drop rows with NaN values
-    if dropnan:
-        agg.dropna(inplace=True)
-    agg.reset_index(drop=True, inplace=True)
+    #if dropnan:
+    #    agg.dropna(inplace=True)
+    #agg.reset_index(drop=True, inplace=True)
     return agg
 
 def difference(dataset, columns, interval=1):
@@ -71,9 +79,9 @@ def inverse_difference(history, yhat, interval=1):
 
 def scale(train, test):
     # scale train and test data to [-1, 1]
-
     # fit scaler
     scaler = MinMaxScaler(feature_range=(-1, 1))
+    #scaler = StandardScaler()
     scaler = scaler.fit(train)
     # transform train
     #train = train.reshape(train.shape[0], train.shape[1])
@@ -83,10 +91,27 @@ def scale(train, test):
     test_scaled = scaler.transform(test)
     return scaler, train_scaled, test_scaled
 
-def invert_scale(scaler, X, value):
+def invert_scale(scaler, forecast):
     # inverse scaling for a forecasted value
-    new_row = [x for x in X] + [value]
-    array = numpy.array(new_row)
-    array = array.reshape(1, len(array))
-    inverted = scaler.inverse_transform(array)
-    return inverted[0, -1]
+    # create array from forecast
+    forecast = forecast.reshape(1, len(forecast))
+    inverted = scaler.inverse_transform(forecast)
+    return inverted[0, :]
+
+def inverse_transform(series, forecasts, scaler, n_test):
+    # inverse data transform on forecasts
+	inverted = list()
+	for i in range(len(forecasts)):
+		# create array from forecast
+		forecast = array(forecasts[i])
+		forecast = forecast.reshape(1, len(forecast))
+		# invert scaling
+		inv_scale = scaler.inverse_transform(forecast)
+		inv_scale = inv_scale[0, :]
+		# invert differencing
+		index = len(series) - n_test + i - 1
+		last_ob = series.values[index]
+		inv_diff = inverse_difference(last_ob, inv_scale)
+		# store
+		inverted.append(inv_diff)
+	return inverted
