@@ -105,3 +105,6 @@ venv.bak/
 
 # project
 data/all_stocks_5yr.csv
+model_*/
+logs/
+.vscode/
