@@ -1,27 +1,29 @@
 {"data": {
   "data_dir": "data",
-  "dataset": "all_stocks_5yr.csv"
+  "dataset": "all_stocks_5yr.csv",
+  "output_dir": "model"
   },
 "preprocessing": {
   "vars_output": ["close"],
   "no_multisteps": 1,
-  "lag": 7,
-  "stationary": true,
-  "re-fit": false,
-  "multivariate": true,
+  "lag": 1,
+  "stationary": false,
+  "ahead": 1,
+  "refit": false,
+  "multivariate": false,
   "test_size": 0.1
   },
 "arch": {
-  "neurons": 32,
-  "rnn": "LSTM",
-  "drop": 0.0,
+  "neurons": 50,
+  "rnn": "MLP",
+  "drop": 0,
   "nlayers": 1,
-  "activation": "tanh",
-  "activation_r": "hard_sigmoid"
+  "activation": "relu",
+  "activation_r": "hard_sigmoid",
+  "impl": 2
   },
 "training": {
-  "batch": 500,
-  "epochs": 25,
+  "epochs": 16,
   "optimizer": "adam",
   "lrate": 0.001
   }
